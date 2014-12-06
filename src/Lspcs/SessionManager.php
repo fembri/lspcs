@@ -8,7 +8,7 @@ class SessionManager extends Illuminate\Session\SessionManager {
 	 * Build the session instance.
 	 *
 	 * @param  \SessionHandlerInterface  $handler
-	 * @return \Illuminate\Session\Store
+	 * @return \Lspcs\Store
 	 */
 	protected function buildSession($handler)
 	{
