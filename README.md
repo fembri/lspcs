@@ -19,7 +19,7 @@ After composer updated, replace laravel Illuminate\Session\SessionServiceProvide
 Done.
 
 ### How it works
-Laravel session mechanism save its data on the end of a single request, so when you modify your session data in a request laravel don't really save it to the storage. We simply modified it, read directly from storage before you get the data or before you update the data, and then write it to the storage. Sure it would slow down the performance, but you can activated its persistent mode only when you need it.
+Laravel session mechanism save its data on the end of a single request, so when you modify your session data in a request laravel don't really save it to the storage. We simply modified it, read directly from storage before you get the data or before you update the data, and then write it to the storage. Sure it would slow down the performance, but you can activate its persistent mode only when you need it.
 
 ### Usage
 ```
