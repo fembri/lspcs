@@ -1,6 +1,6 @@
 <?php namespace Lspcs;
 
-class SessionServiceProvider extends Illuminate\Session\SessionServiceProvider {
+class SessionServiceProvider extends \Illuminate\Session\SessionServiceProvider {
 
 	/**
 	 * Register the session manager instance.

@@ -3,7 +3,7 @@
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\NullSessionHandler;
 
-class SessionManager extends Illuminate\Session\SessionManager {
+class SessionManager extends \Illuminate\Session\SessionManager {
 	/**
 	 * Build the session instance.
 	 *
