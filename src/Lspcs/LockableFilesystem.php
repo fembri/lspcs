@@ -77,7 +77,7 @@ class LockableFilesystem extends Filesystem {
 	 * @param  string  $contents
 	 * @return int
 	 */
-	public function put($path, $contents)
+	public function put($path, $contents, $lock = false)
 	{
 		if ($handler = $this->getHandler($path)) 
 		{
