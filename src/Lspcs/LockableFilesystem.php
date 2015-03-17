@@ -14,11 +14,12 @@ class LockableFilesystem extends Filesystem {
 	{
 		parent::__construct();
 		
-		register_shutdown_function(function() use ($this)
+		$fileSystem = $this;
+		register_shutdown_function(function() use ($fileSystem)
 		{
-			if (!$this->handler) return;
+			if (!$fileSystem->handler) return;
 			
-			foreach($this->handler as $handler) {
+			foreach($fileSystem->handler as $handler) {
 				flock($handler, LOCK_UN);
 				fclose($handler);
 			}
