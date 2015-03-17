@@ -23,7 +23,7 @@ class Store extends \Illuminate\Session\Store {
 	
 	public function persistentMode($activate = true)
 	{
-		$this->persistDataReliability = $activate===true;
+		$this->persistDataReliability = $activate === true;
 	}
 
 	/**
@@ -51,8 +51,8 @@ class Store extends \Illuminate\Session\Store {
 		$this->addBagDataToSession();
 
 		$this->ageFlashData();
-
-		$this->handler->write($this->getId(), serialize($this->attributes));
+		
+		$this->saveToHandler();
 
 		$this->started = false;
 	}
@@ -64,8 +64,9 @@ class Store extends \Illuminate\Session\Store {
 	public function get($name, $default = null)
 	{
 		if ($this->persistDataReliability)
+		{
 			$this->attributes = $this->readFromHandler();
-			
+		}
 		return array_get($this->attributes, $name, $default);
 	}
 
@@ -75,13 +76,15 @@ class Store extends \Illuminate\Session\Store {
 	 */
 	public function set($name, $value, $directCall = true)
 	{
-		if ($this->persistDataReliability && $directCall)
-			$this->attributes = $this->readFromHandler();
-			
-		array_set($this->attributes, $name, $value);
-		
-		if ($this->persistDataReliability && $directCall)
-			$this->handler->write($this->getId(), serialize($this->attributes));
+		if ($this->persistDataReliability && $directCall) {
+			$this->handler->transaction(function() use ($this)
+			{
+				$this->attributes = $this->readFromHandler();
+				array_set($this->attributes, $name, $value);
+				$this->saveToHandler();
+			});
+		} else 
+			array_set($this->attributes, $name, $value);
 	}
 
 
@@ -92,20 +95,27 @@ class Store extends \Illuminate\Session\Store {
 	 * @param  mixed|null  	 $value
 	 * @return void
 	 */
-	public function put($key, $value)
+	public function put($key, $value = null)
 	{
-		if ($this->persistDataReliability)
-			$this->attributes = $this->readFromHandler();
-			
 		if ( ! is_array($key)) $key = array($key => $value);
-		
-		foreach ($key as $arrayKey => $arrayValue)
-		{
-			$this->set($arrayKey, $arrayValue, false);
+		if ($this->persistDataReliability) {
+			$this->handler->transaction(function() use ($this, $key)
+			{
+				$this->attributes = $this->readFromHandler();
+			
+				foreach ($key as $arrayKey => $arrayValue)
+				{
+					$this->set($arrayKey, $arrayValue, false);
+				}
+				
+				$this->saveToHandler();
+			});
+		} else {
+			foreach ($key as $arrayKey => $arrayValue)
+			{
+				$this->set($arrayKey, $arrayValue, false);
+			}
 		}
-		
-		if ($this->persistDataReliability)
-			$this->handler->write($this->getId(), serialize($this->attributes));
 	}
 	
 
@@ -117,13 +127,21 @@ class Store extends \Illuminate\Session\Store {
 	 */
 	public function forget($key)
 	{
-		if ($this->persistDataReliability)
-			$this->attributes = $this->readFromHandler();
-			
-		array_forget($this->attributes, $key);
-		
-		if ($this->persistDataReliability)
-			$this->handler->write($this->getId(), serialize($this->attributes));
+		if ($this->persistDataReliability) {
+			$this->handler->transaction(function() use ($this)
+			{
+				$this->attributes = $this->readFromHandler();
+				
+				array_forget($this->attributes, $key);
+				
+				$this->saveToHandler();
+			});
+		} else 
+			array_forget($this->attributes, $key);
 	}
 
+	public function saveToHandler()
+	{
+		$this->handler->write($this->getId(), serialize($this->attributes));
+	}
 }
