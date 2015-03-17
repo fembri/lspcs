@@ -12,8 +12,6 @@ class LockableFilesystem extends Filesystem {
 	
 	public function __construct()
 	{
-		parent::__construct();
-		
 		$fileSystem = $this;
 		register_shutdown_function(function() use ($fileSystem)
 		{
