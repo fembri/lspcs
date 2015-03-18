@@ -1,7 +1,7 @@
 <?php namespace Lspcs;
 
 use Symfony\Component\Finder\Finder;
-use LockableFilesystem as Filesystem;
+use Illuminate\Filesystem\Filesystem;
 
 class LockableFileSessionHandler implements \SessionHandlerInterface {
 
@@ -98,10 +98,15 @@ class LockableFileSessionHandler implements \SessionHandlerInterface {
 	
 	public function transaction($sessionId, $callback)
 	{
-		$this->files->lock($this->path.'/'.$sessionId, true);
+		$this->lock($sessionId);
 		
 		call_user_func($callback);
 		
-		$this->files->lock($this->path.'/'.$sessionId, false);
+		$this->lock($sessionId, false);
+	}
+	
+	public function lock($sessionId, $lockStatus = true)
+	{
+		$this->files->lock($this->path.'/'.$sessionId, $lockStatus);
 	}
 }

@@ -11,7 +11,7 @@ class LockableFilesystem extends Filesystem {
 	protected $handler = array();
 	
 	public function __construct()
-	{
+	{		
 		$fileSystem = $this;
 		register_shutdown_function(function() use ($fileSystem)
 		{
@@ -39,7 +39,6 @@ class LockableFilesystem extends Filesystem {
 
 	public function getHandler($path)
 	{
-		$path = realpath($path);
 		if (!isset($this->handler[$path]) || !$this->handler[$path])
 		{
 			$this->handler[$path] = fopen($path, "a+");
@@ -62,7 +61,7 @@ class LockableFilesystem extends Filesystem {
 			rewind($handler);
 			$data = "";
 			while(!feof($handler))
-				$data += fread($f, filesize($path));
+				$data .= fread($handler, filesize($path));
 			return $data;
 		}
 		throw new FileNotFoundException("File does not exist at path {$path}");

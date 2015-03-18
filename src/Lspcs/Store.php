@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
 class Store extends \Illuminate\Session\Store {
 
 	protected $persistDataReliability = false;
+	protected $transactionId = null;
 	
 	/**
 	 * {@inheritdoc}
@@ -24,6 +25,21 @@ class Store extends \Illuminate\Session\Store {
 	public function persistentMode($activate = true)
 	{
 		$this->persistDataReliability = $activate === true;
+	}
+	
+	public function putAttributes($attributes)
+	{
+		$this->attributes = $attributes;
+	}
+	
+	public function setAttributes($key, $value)
+	{
+		array_set($this->attributes, $key, $value);
+	}
+	
+	public function forgetAttributes($key)
+	{
+		array_forget($this->attributes, $key);
 	}
 
 	/**
@@ -77,14 +93,15 @@ class Store extends \Illuminate\Session\Store {
 	public function set($name, $value, $directCall = true)
 	{
 		if ($this->persistDataReliability && $directCall) {
-			$this->handler->transaction(function() use ($this)
+			$fileSystem = $this;
+			$this->handler->transaction(function() use ($fileSystem, $name, $value)
 			{
-				$this->attributes = $this->readFromHandler();
-				array_set($this->attributes, $name, $value);
-				$this->saveToHandler();
+				$fileSystem->putAttributes($fileSystem->readFromHandler());
+				$fileSystem->setAttributes($name, $value);
+				$fileSystem->saveToHandler();
 			});
 		} else 
-			array_set($this->attributes, $name, $value);
+			$this->setAttributes($name, $value);
 	}
 
 
@@ -99,16 +116,17 @@ class Store extends \Illuminate\Session\Store {
 	{
 		if ( ! is_array($key)) $key = array($key => $value);
 		if ($this->persistDataReliability) {
-			$this->handler->transaction(function() use ($this, $key)
+			$fileSystem = $this;
+			$this->handler->transaction(function() use ($fileSystem, $key)
 			{
-				$this->attributes = $this->readFromHandler();
+				$fileSystem->putAttributes($fileSystem->readFromHandler());
 			
 				foreach ($key as $arrayKey => $arrayValue)
 				{
-					$this->set($arrayKey, $arrayValue, false);
+					$fileSystem->set($arrayKey, $arrayValue, false);
 				}
 				
-				$this->saveToHandler();
+				$fileSystem->saveToHandler();
 			});
 		} else {
 			foreach ($key as $arrayKey => $arrayValue)
@@ -116,6 +134,32 @@ class Store extends \Illuminate\Session\Store {
 				$this->set($arrayKey, $arrayValue, false);
 			}
 		}
+	}
+	
+	public function getAttributes($key= null)
+	{
+		if (!$key) return $this->attributes;
+		return array_get($this->attributes, $key, null);
+	}
+	
+	public function transaction($callback)
+	{
+		$transactionId = md5(rand(0, 10)*rand());
+		if (!$this->transactionId) {
+			$this->transactionId = $transactionId;
+			$this->handler->lock($this->getId());
+			$this->putAttributes($this->readFromHandler());
+		}
+		
+		$return = call_user_func($callback);
+		
+		if ($this->transactionId == $transactionId) {
+			$this->transactionId = null;
+			$this->saveToHandler();
+			$this->handler->lock($this->getId(), false);
+		}
+		
+		return $return;
 	}
 	
 
@@ -128,16 +172,17 @@ class Store extends \Illuminate\Session\Store {
 	public function forget($key)
 	{
 		if ($this->persistDataReliability) {
-			$this->handler->transaction(function() use ($this)
+			$fileSystem = $this;
+			$this->handler->transaction(function() use ($fileSystem, $key)
 			{
-				$this->attributes = $this->readFromHandler();
+				$fileSystem->putAttributes($fileSystem->readFromHandler());
 				
-				array_forget($this->attributes, $key);
+				$fileSystem->forgetAttributes($key);
 				
-				$this->saveToHandler();
+				$fileSystem->saveToHandler();
 			});
 		} else 
-			array_forget($this->attributes, $key);
+			$this->forgetAttributes($key);
 	}
 
 	public function saveToHandler()
