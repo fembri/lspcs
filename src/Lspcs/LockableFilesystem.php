@@ -60,8 +60,9 @@ class LockableFilesystem extends Filesystem {
 		{
 			rewind($handler);
 			$data = "";
+			$size = filesize($path);
 			while(!feof($handler))
-				$data .= fread($handler, filesize($path));
+				$data .= fgets($handler, $size ? $size : 8192);
 			return $data;
 		}
 		throw new FileNotFoundException("File does not exist at path {$path}");
